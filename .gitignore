@@ -12,6 +12,7 @@ expo-env.d.ts
 android/
 build/
 .idea/
+.gradle/
 
 # Native
 .kotlin/
