@@ -2,7 +2,7 @@ import { Text, View } from '@/components/Themed';
 import { useState } from 'react';
 import { ScrollView, TextInput, TouchableOpacity } from 'react-native';
 
-import SwarmNodeModule from '../../modules/swarm-node/';
+import SwarmNodeModule, { SwarmFile } from '../../modules/swarm-node/';
 
 import styles from './styles';
 
@@ -14,8 +14,9 @@ export default function TabTwoScreen() {
 
   const handleDownload = () => {
     console.log('Downloading from Swarm Hash:', swarmHash);
-
-    console.log('Downloading from Swarm Hash:', SwarmNodeModule.PI);
+    SwarmNodeModule.download({ hash: swarmHash }).then((file: SwarmFile) => {
+      console.log('Downloaded file:', file);
+    });
   };
 
   return (

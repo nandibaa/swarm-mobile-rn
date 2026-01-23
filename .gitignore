@@ -9,7 +9,7 @@ dist/
 web-build/
 expo-env.d.ts
 
-android/
+./android/
 build/
 .idea/
 .gradle/

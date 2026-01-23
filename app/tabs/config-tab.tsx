@@ -1,6 +1,6 @@
 import { Text, View } from '@/components/Themed';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, TextInput, TouchableOpacity } from 'react-native';
 
 import SwarmNodeModule from '../../modules/swarm-node';
@@ -14,10 +14,25 @@ export default function TabOneScreen() {
   );
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleStartNode = () => {
+  useEffect(() => {
+    // Remove all existing listeners before adding a new one because of strict mode double rendering
+    SwarmNodeModule.removeAllListeners('onChange');
+
+    const subscription = SwarmNodeModule.addListener('onChange', (event) => {
+      console.log('SwarmNodeModule onChange event:', event);
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const handleStartNode = async () => {
     console.log('Starting node with:', { password, rpcEndpoint });
     // TODO: Implement download logic
-    console.log(SwarmNodeModule.hello());
+    console.log('SwarmNodeModule keys:', Object.keys(SwarmNodeModule));
+    console.log('starting Node...');
+    const res = await SwarmNodeModule.startNode({ password, rpcEndpoint });
+
+    console.log('startNode result:', res);
   };
 
   return (

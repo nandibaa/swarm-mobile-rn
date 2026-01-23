@@ -1,11 +1,15 @@
 import { NativeModule, requireNativeModule } from 'expo';
 
-import { SwarmNodeModuleEvents } from './SwarmNode.types';
+import {
+  DownloadOptions,
+  SwarmFile,
+  SwarmNodeModuleEvents,
+  SwarmNodeOptions,
+} from './SwarmNode.types';
 
 declare class SwarmNodeModule extends NativeModule<SwarmNodeModuleEvents> {
-  PI: number;
-  hello(): string;
-  setValueAsync(value: string): Promise<void>;
+  startNode(nodeOptions: SwarmNodeOptions): Promise<string>;
+  download(downloadOptions: DownloadOptions): Promise<SwarmFile>;
 }
 
 // This call loads the native module object from the JSI.

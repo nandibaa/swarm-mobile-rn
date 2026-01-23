@@ -17,3 +17,17 @@ export type SwarmNodeViewProps = {
   onLoad: (event: { nativeEvent: OnLoadEventPayload }) => void;
   style?: StyleProp<ViewStyle>;
 };
+
+export type SwarmNodeOptions = {
+  password: string;
+  rpcEndpoint: string;
+};
+
+export type DownloadOptions = {
+  hash: string;
+};
+
+export type SwarmFile = {
+  filename: string;
+  data: Uint8Array;
+};
