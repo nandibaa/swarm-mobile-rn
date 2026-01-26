@@ -9,6 +9,8 @@ import {
 
 declare class SwarmNodeModule extends NativeModule<SwarmNodeModuleEvents> {
   startNode(nodeOptions: SwarmNodeOptions): Promise<string>;
+  stopNode(): Promise<string>;
+  getConnectedPeers(): Promise<number>;
   download(downloadOptions: DownloadOptions): Promise<SwarmFile>;
 }
 

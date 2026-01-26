@@ -1,5 +1,5 @@
 import { Text, View } from '@/components/Themed';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, TextInput, TouchableOpacity } from 'react-native';
 
 import SwarmNodeModule, { SwarmFile } from '../../modules/swarm-node/';
@@ -11,6 +11,21 @@ export default function TabTwoScreen() {
   const [nodeStatus, setNodeStatus] = useState('Stopped');
   const [connectedPeers, setConnectedPeers] = useState(0);
   const [walletAddress, setWalletAddress] = useState('N/A');
+
+  useEffect(() => {
+    handleQueryPeers();
+    const interval = connectedPeers < 100 ? 1000 : 5000;
+    const schedule = setInterval(handleQueryPeers, interval);
+    return () => clearInterval(schedule);
+  }, [connectedPeers]);
+
+  const handleQueryPeers = () => {
+    console.log('Querying connected peers...');
+    SwarmNodeModule.getConnectedPeers().then((peers: number) => {
+      console.log('Connected peers:', peers);
+      setConnectedPeers(peers);
+    });
+  };
 
   const handleDownload = () => {
     console.log('Downloading from Swarm Hash:', swarmHash);

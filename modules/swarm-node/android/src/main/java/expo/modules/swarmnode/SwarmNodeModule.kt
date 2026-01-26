@@ -5,12 +5,17 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
 import java.net.URL
+import android.content.Context
+
+import mobile.Mobile;
+import mobile.MobileNode;
+import mobile.MobileNodeOptions;
 
  data class SwarmNodeOptions(
   @Field
   val password: String,
   @Field
-  val rpcEndpoint: String
+  val rpcEndpoint: String,
 ) : Record
 
 data class DownloadOptions(
@@ -27,6 +32,8 @@ data class SwarmFile(
 ) : Record
 
  class SwarmNodeModule : Module() {
+  private var swarmNode: SwarmNode? = null
+
   // Each module class must implement the definition function. The definition consists of components
   // that describes the module's functionality and behavior.
   // See https://docs.expo.dev/modules/module-api for more details about available components.
@@ -39,8 +46,36 @@ data class SwarmFile(
     // Defines event names that the module can send to JavaScript.
     Events("onChange")
 
-     AsyncFunction("startNode") { nodeOptions: SwarmNodeOptions ->
-      "Starting Node with paramters: Password: ${nodeOptions.password}, RPC: ${nodeOptions.rpcEndpoint}"
+    AsyncFunction("startNode") { nodeOptions: SwarmNodeOptions ->
+      try {
+        val context = appContext.reactContext ?: throw RuntimeException("React context is null")
+
+        val dataDir = context.filesDir.absolutePath
+
+        if (swarmNode == null) {
+          // println("Starting Swarm Node with options : password=${nodeOptions.password}, rpcEndpoint=${nodeOptions.rpcEndpoint}")
+          swarmNode = SwarmNode(dataDir, nodeOptions.password, nodeOptions.rpcEndpoint)
+          swarmNode?.start()
+        }
+        
+        if (swarmNode?.isRunning == true) {
+          return@AsyncFunction
+        }
+
+        swarmNode?.start()
+              
+        return@AsyncFunction
+      } catch (e: Exception) {
+        throw RuntimeException("Failed to start node: ${e.message}", e)
+      }
+    }
+
+    AsyncFunction("getConnectedPeers") {
+      swarmNode?.getConnectedPeers()
+    }
+
+     AsyncFunction("stopNode") {
+      swarmNode?.stopNode()
     }
 
     AsyncFunction("download") { downloadOptions: DownloadOptions ->

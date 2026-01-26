@@ -1,0 +1,143 @@
+package expo.modules.swarmnode;
+
+import androidx.annotation.NonNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+import mobile.Mobile;
+import mobile.MobileNode;
+import mobile.MobileNodeOptions;
+
+public class SwarmNode {
+    private NodeInfo nodeInfo;
+    private MobileNode mobileNode;
+    private final List<SwarmNodeListener> listeners;
+    private final String dataDir;
+    private final String password;
+    private final String rpcEndpoint;
+
+
+    public SwarmNode(String dataDir, String password, String rpcEndpoint) {
+        this.listeners = new ArrayList<>();
+        this.dataDir = dataDir;
+        this.password = password;
+        this.rpcEndpoint = rpcEndpoint;
+        this.nodeInfo = new NodeInfo("", NodeStatus.Started);
+    }
+
+    public void addListener(SwarmNodeListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(SwarmNodeListener listener) {
+        listeners.remove(listener);
+    }
+
+    public void updateNodeInfo(String walletAddress, NodeStatus nodeStatus) {
+        this.nodeInfo = new NodeInfo(walletAddress, nodeStatus);
+        notifyNodeInfoChanged();
+    }
+
+    public void start() {
+        updateNodeInfo(nodeInfo.walletAddress(), NodeStatus.Started);
+        try {
+            this.mobileNode = connect();
+            updateNodeInfo(mobileNode.walletAddress(), NodeStatus.Running);
+        } catch (RuntimeException re) {
+            updateNodeInfo(nodeInfo.walletAddress(), NodeStatus.Stopped);
+            throw re;
+        }
+    }
+
+    public void stopNode() throws Exception {
+        this.listeners.clear();
+        this.mobileNode.shutdown();
+        updateNodeInfo("", NodeStatus.Stopped);
+        notifyNodeInfoChanged();
+    }
+
+    public boolean isRunning() {
+        return this.nodeInfo.status() == NodeStatus.Running;
+    }
+
+
+    public long getConnectedPeers() {
+        if (isRunning()) {
+            if (mobileNode == null) {
+                throw new RuntimeException("Bee is not initialized");
+            }
+
+            return mobileNode.connectedPeerCount();
+        }
+
+        return 0;
+    }
+
+    public void download(String hash) {
+        if (isRunning()) {
+            try {
+                var file = mobileNode.download(hash);
+
+                if (file == null) {
+                    Logger.getLogger(this.getClass().getName()).info("Download failed: file is null for hash " + hash);
+                    return;
+                }
+
+                for (SwarmNodeListener listener : listeners) {
+                    listener.onDownloadFinished(file.getName(), file.getData());
+                }
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void notifyNodeInfoChanged() {
+        for (SwarmNodeListener listener : listeners) {
+            listener.onNodeInfoChanged(this.nodeInfo);
+        }
+    }
+
+
+    @NonNull
+    private MobileNodeOptions getLiteOptions() {
+
+        var options = new MobileNodeOptions();
+        options.setFullNodeMode(false);
+        options.setBootnodeMode(false);
+        options.setBootnodes("/dnsaddr/mainnet.ethswarm.org");
+        options.setDataDir(dataDir + "/swarm-mobile");
+        options.setWelcomeMessage("welcomeMessage");
+        options.setBlockchainRpcEndpoint(rpcEndpoint);
+        options.setSwapInitialDeposit("0");
+        options.setPaymentThreshold("100000000");
+        options.setSwapEnable(false);
+        options.setChequebookEnable(true);
+        options.setUsePostageSnapshot(false);
+        options.setMainnet(true);
+        options.setNetworkID(1);
+        options.setRetrievalCaching(true);
+
+        return options;
+    }
+
+    private MobileNode connect() {
+        var options = getLiteOptions();
+
+        MobileNode node;
+        try {
+            node = Mobile.startNode(options, password, "3");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        if (node == null) {
+            throw new RuntimeException("Bee is not defined");
+        }
+
+        return node;
+    }
+}
