@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["SwarmNodeModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.swarmnode.SwarmNodeModule"]
+  }
+}
