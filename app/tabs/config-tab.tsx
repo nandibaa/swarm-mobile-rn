@@ -1,11 +1,18 @@
 import { Text, View } from '@/components/Themed';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, TextInput, TouchableOpacity } from 'react-native';
 
 import SwarmNodeModule from '../../modules/swarm-node';
 
 import styles from './styles';
+
+const STORAGE_KEYS = {
+  PASSWORD: 'swarm_node_password',
+  RPC_ENDPOINT: 'swarm_node_rpc_endpoint',
+};
 
 export default function TabOneScreen() {
   const [password, setPassword] = useState('');
@@ -15,7 +22,30 @@ export default function TabOneScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    // Remove all existing listeners before adding a new one because of strict mode double rendering
+    const loadSavedConfig = async () => {
+      try {
+        const savedPassword = await SecureStore.getItemAsync(
+          STORAGE_KEYS.PASSWORD,
+        );
+        const savedRpcEndpoint = await SecureStore.getItemAsync(
+          STORAGE_KEYS.RPC_ENDPOINT,
+        );
+
+        if (savedPassword) {
+          setPassword(savedPassword);
+        }
+        if (savedRpcEndpoint) {
+          setRpcEndpoint(savedRpcEndpoint);
+        }
+      } catch (error) {
+        console.error('Error loading saved configuration:', error);
+      }
+    };
+
+    loadSavedConfig();
+  }, []);
+
+  useEffect(() => {
     SwarmNodeModule.removeAllListeners('onChange');
 
     const subscription = SwarmNodeModule.addListener('onChange', (event) => {
@@ -26,13 +56,15 @@ export default function TabOneScreen() {
   }, []);
 
   const handleStartNode = async () => {
-    console.log('Starting node with:', { password, rpcEndpoint });
-    // TODO: Implement download logic
-    console.log('SwarmNodeModule keys:', Object.keys(SwarmNodeModule));
-    console.log('starting Node...');
-    const res = await SwarmNodeModule.startNode({ password, rpcEndpoint });
+    try {
+      await SecureStore.setItemAsync(STORAGE_KEYS.PASSWORD, password);
+      await SecureStore.setItemAsync(STORAGE_KEYS.RPC_ENDPOINT, rpcEndpoint);
+    } catch (error) {
+      console.error('Error saving configuration:', error);
+    }
 
-    console.log('startNode result:', res);
+    void SwarmNodeModule.startNode({ password, rpcEndpoint });
+    router.push('/tabs/download-tab');
   };
 
   return (

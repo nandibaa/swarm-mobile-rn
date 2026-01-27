@@ -1,16 +1,66 @@
 import { Text, View } from '@/components/Themed';
 import { useEffect, useState } from 'react';
-import { ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { Alert, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 
-import SwarmNodeModule, { SwarmFile } from '../../modules/swarm-node/';
+import SwarmNodeModule from '../../modules/swarm-node/';
 
 import styles from './styles';
 
+import { createDocument } from 'react-native-saf-x';
+
 export default function TabTwoScreen() {
-  const [swarmHash, setSwarmHash] = useState('');
+  const [swarmHash, setSwarmHash] = useState();
   const [nodeStatus, setNodeStatus] = useState('Stopped');
   const [connectedPeers, setConnectedPeers] = useState(0);
   const [walletAddress, setWalletAddress] = useState('N/A');
+
+  useEffect(() => {
+    const onChangeSubscription = SwarmNodeModule.addListener(
+      'onChange',
+      (event) => {
+        console.log('onChange event received:', event);
+        if (event.walletAddress) {
+          setWalletAddress(event.walletAddress);
+        }
+        if (event.status) {
+          setNodeStatus(event.status);
+        }
+      },
+    );
+
+    const onDownloadFinishedSubscription = SwarmNodeModule.addListener(
+      'onDownloadFinished',
+      async (event) => {
+        if (event.filename && event.base64Data) {
+          try {
+            const uri = await createDocument(event.base64Data, {
+              mimeType: 'application/octet-stream',
+              encoding: 'base64',
+              initialName: event.filename,
+            });
+
+            if (!uri) {
+              console.log('User backed out without saving');
+              return;
+            }
+
+            console.log('File saved successfully to:', uri.uri);
+            Alert.alert('Success', `File saved: ${uri.uri}`);
+          } catch (error) {
+            console.error('Error saving file:', error);
+            Alert.alert('Error', 'Failed to save file');
+          }
+        } else {
+          console.warn('Invalid download finished event data');
+        }
+      },
+    );
+
+    return () => {
+      onChangeSubscription.remove();
+      onDownloadFinishedSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     handleQueryPeers();
@@ -20,18 +70,13 @@ export default function TabTwoScreen() {
   }, [connectedPeers]);
 
   const handleQueryPeers = () => {
-    console.log('Querying connected peers...');
     SwarmNodeModule.getConnectedPeers().then((peers: number) => {
-      console.log('Connected peers:', peers);
       setConnectedPeers(peers);
     });
   };
 
   const handleDownload = () => {
-    console.log('Downloading from Swarm Hash:', swarmHash);
-    SwarmNodeModule.download({ hash: swarmHash }).then((file: SwarmFile) => {
-      console.log('Downloaded file:', file);
-    });
+    void SwarmNodeModule.download({ hash: swarmHash });
   };
 
   return (

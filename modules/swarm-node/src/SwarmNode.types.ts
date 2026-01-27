@@ -6,10 +6,20 @@ export type OnLoadEventPayload = {
 
 export type SwarmNodeModuleEvents = {
   onChange: (params: ChangeEventPayload) => void;
+  onDownloadFinished: (params: DownloadFinishedEventPayload) => void;
 };
 
 export type ChangeEventPayload = {
-  value: string;
+  value?: string;
+  walletAddress?: string;
+  status?: string;
+};
+
+export type DownloadFinishedEventPayload = {
+  filename: string;
+  // Base64-encoded from the Kotlin side because of this issue Uint8Array cannot be used
+  // https://github.com/facebook/react-native/issues/39441#issuecomment-3180523965
+  base64Data: string;
 };
 
 export type SwarmNodeViewProps = {
@@ -29,5 +39,5 @@ export type DownloadOptions = {
 
 export type SwarmFile = {
   filename: string;
-  data: Uint8Array;
+  data: string; // Base64 encoded string
 };

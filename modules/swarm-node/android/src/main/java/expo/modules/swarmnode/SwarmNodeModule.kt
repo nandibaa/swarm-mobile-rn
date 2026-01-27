@@ -6,6 +6,7 @@ import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
 import java.net.URL
 import android.content.Context
+import android.util.Base64
 
 import mobile.Mobile;
 import mobile.MobileNode;
@@ -28,11 +29,13 @@ data class SwarmFile(
   val filename: String,
 
   @Field
-  val data: ByteArray,
+  val data: String,  // Changed from ByteArray to String (Base64 encoded) https://github.com/facebook/react-native/issues/39441#issuecomment-3180523965
 ) : Record
 
  class SwarmNodeModule : Module() {
   private var swarmNode: SwarmNode? = null
+
+  private var listener:SwarmNodeListener? = null
 
   // Each module class must implement the definition function. The definition consists of components
   // that describes the module's functionality and behavior.
@@ -44,7 +47,7 @@ data class SwarmFile(
     Name("SwarmNode")
 
     // Defines event names that the module can send to JavaScript.
-    Events("onChange")
+    Events("onChange", "onDownloadFinished")
 
     AsyncFunction("startNode") { nodeOptions: SwarmNodeOptions ->
       try {
@@ -55,6 +58,8 @@ data class SwarmFile(
         if (swarmNode == null) {
           // println("Starting Swarm Node with options : password=${nodeOptions.password}, rpcEndpoint=${nodeOptions.rpcEndpoint}")
           swarmNode = SwarmNode(dataDir, nodeOptions.password, nodeOptions.rpcEndpoint)
+          listener = DefaultSwarmNodeListener(this@SwarmNodeModule)
+          swarmNode?.addListener(listener)
           swarmNode?.start()
         }
         
@@ -79,10 +84,8 @@ data class SwarmFile(
     }
 
     AsyncFunction("download") { downloadOptions: DownloadOptions ->
-      SwarmFile(
-        filename = "sample.txt",
-        data = byteArrayOf(72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33)
-      )
+      println("Downloading file with hash: ${downloadOptions.hash}")
+      swarmNode?.download(downloadOptions.hash)
     }
 
     // Defines a JavaScript function that always returns a Promise and whose native code
