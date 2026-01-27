@@ -9,9 +9,7 @@ import styles from './styles';
 import { createDocument } from 'react-native-saf-x';
 
 export default function TabTwoScreen() {
-  const [swarmHash, setSwarmHash] = useState(
-    '1cd1e4fa753e6d9f23d343724a394feb855d05ad777aa1782531a7b3a98acc0b',
-  );
+  const [swarmHash, setSwarmHash] = useState();
   const [nodeStatus, setNodeStatus] = useState('Stopped');
   const [connectedPeers, setConnectedPeers] = useState(0);
   const [walletAddress, setWalletAddress] = useState('N/A');
