@@ -1,7 +1,7 @@
 import { Text, View } from '@/components/Themed';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Pressable, TextInput, TouchableOpacity } from 'react-native';
 
@@ -43,16 +43,6 @@ export default function TabOneScreen() {
     };
 
     loadSavedConfig();
-  }, []);
-
-  useEffect(() => {
-    SwarmNodeModule.removeAllListeners('onChange');
-
-    const subscription = SwarmNodeModule.addListener('onChange', (event) => {
-      console.log('SwarmNodeModule onChange event:', event);
-    });
-
-    return () => subscription.remove();
   }, []);
 
   const handleStartNode = async () => {
