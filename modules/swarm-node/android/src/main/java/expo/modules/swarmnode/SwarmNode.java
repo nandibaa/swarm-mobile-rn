@@ -28,6 +28,7 @@ public class SwarmNode {
     }
 
     public void addListener(SwarmNodeListener listener) {
+        Logger.getLogger(this.getClass().getName()).info("Adding listener: " + listener.getClass().getName());
         listeners.add(listener);
     }
 
