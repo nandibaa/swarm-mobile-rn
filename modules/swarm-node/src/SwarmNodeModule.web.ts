@@ -17,6 +17,16 @@ class SwarmNodeModule extends NativeModule<SwarmNodeModuleEvents> {
     return Promise.resolve('Hello world! 👋');
   }
 
+  stopNode(): Promise<string> {
+    console.log('Stopping node (web mock)');
+    return Promise.resolve('Node stopped (web mock)');
+  }
+
+  getConnectedPeers(): Promise<number> {
+    console.log('Getting connected peers (web mock)');
+    return Promise.resolve(5); // Mocked number of connected peers
+  }
+
   download(downloadOptions: DownloadOptions): Promise<SwarmFile> {
     return Promise.resolve({
       filename: 'example.txt',
