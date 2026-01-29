@@ -1,12 +1,12 @@
 import { Text, View } from '@/components/Themed';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, TextInput, TouchableOpacity } from 'react-native';
 
 import SwarmNodeModule from '../../modules/swarm-node';
 
+import useAppStore from '@/app/store/app.store';
 import styles from './styles';
 
 const STORAGE_KEYS = {
@@ -15,55 +15,22 @@ const STORAGE_KEYS = {
 };
 
 export default function TabOneScreen() {
-  const [password, setPassword] = useState('');
-  const [rpcEndpoint, setRpcEndpoint] = useState(
-    'https://xdai.fairdatasociety.org',
-  );
+  const { getPassword, setPassword, getRpcEndpoint, setRpcEndpoint } =
+    useAppStore();
+
+  const [password, setPasswordLocal] = useState(getPassword());
+  const [rpcEndpoint, setRpcEndpointLocal] = useState(getRpcEndpoint());
+
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    const loadSavedConfig = async () => {
-      try {
-        const savedPassword = await SecureStore.getItemAsync(
-          STORAGE_KEYS.PASSWORD,
-        );
-        const savedRpcEndpoint = await SecureStore.getItemAsync(
-          STORAGE_KEYS.RPC_ENDPOINT,
-        );
-
-        if (savedPassword) {
-          setPassword(savedPassword);
-        }
-        if (savedRpcEndpoint) {
-          setRpcEndpoint(savedRpcEndpoint);
-        }
-      } catch (error) {
-        console.error('Error loading saved configuration:', error);
-      }
-    };
-
-    loadSavedConfig();
-  }, []);
-
-  useEffect(() => {
-    SwarmNodeModule.removeAllListeners('onChange');
-
-    const subscription = SwarmNodeModule.addListener('onChange', (event) => {
-      console.log('SwarmNodeModule onChange event:', event);
-    });
-
-    return () => subscription.remove();
-  }, []);
-
   const handleStartNode = async () => {
-    try {
-      await SecureStore.setItemAsync(STORAGE_KEYS.PASSWORD, password);
-      await SecureStore.setItemAsync(STORAGE_KEYS.RPC_ENDPOINT, rpcEndpoint);
-    } catch (error) {
-      console.error('Error saving configuration:', error);
-    }
+    setPassword(password);
+    setRpcEndpoint(rpcEndpoint);
 
-    void SwarmNodeModule.startNode({ password, rpcEndpoint });
+    void SwarmNodeModule.startNode({
+      password: password,
+      rpcEndpoint: rpcEndpoint,
+    });
     router.push('/tabs/download-tab');
   };
 
@@ -78,7 +45,7 @@ export default function TabOneScreen() {
             <TextInput
               style={styles.input}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={setPasswordLocal}
               secureTextEntry={!showPassword}
               placeholder="Enter password"
               placeholderTextColor="#999"
@@ -101,7 +68,7 @@ export default function TabOneScreen() {
           <TextInput
             style={styles.input}
             value={rpcEndpoint}
-            onChangeText={setRpcEndpoint}
+            onChangeText={setRpcEndpointLocal}
             placeholder="Enter RPC endpoint"
             placeholderTextColor="#999"
             autoCapitalize="none"

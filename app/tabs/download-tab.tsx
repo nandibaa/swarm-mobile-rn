@@ -1,82 +1,27 @@
 import { Text, View } from '@/components/Themed';
-import { useEffect, useState } from 'react';
-import { Alert, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-
-import SwarmNodeModule from '../../modules/swarm-node/';
+import { ScrollView, TextInput, TouchableOpacity } from 'react-native';
 
 import styles from './styles';
 
-import { createDocument } from 'react-native-saf-x';
+import useAppStore from '@/app/store/app.store';
+import SwarmNodeModule from '@/modules/swarm-node';
 
 export default function TabTwoScreen() {
-  const [swarmHash, setSwarmHash] = useState();
-  const [nodeStatus, setNodeStatus] = useState('Stopped');
-  const [connectedPeers, setConnectedPeers] = useState(0);
-  const [walletAddress, setWalletAddress] = useState('N/A');
+  const {
+    swarmHash,
+    nodeStatus,
+    walletAddress,
+    connectedPeers,
+    loading,
+    updateHash,
+    downloadStarted,
+    downloadFinished,
+  } = useAppStore();
 
-  useEffect(() => {
-    const onChangeSubscription = SwarmNodeModule.addListener(
-      'onChange',
-      (event) => {
-        console.log('onChange event received:', event);
-        if (event.walletAddress) {
-          setWalletAddress(event.walletAddress);
-        }
-        if (event.status) {
-          setNodeStatus(event.status);
-        }
-      },
-    );
-
-    const onDownloadFinishedSubscription = SwarmNodeModule.addListener(
-      'onDownloadFinished',
-      async (event) => {
-        if (event.filename && event.base64Data) {
-          try {
-            const uri = await createDocument(event.base64Data, {
-              mimeType: 'application/octet-stream',
-              encoding: 'base64',
-              initialName: event.filename,
-            });
-
-            if (!uri) {
-              console.log('User backed out without saving');
-              return;
-            }
-
-            console.log('File saved successfully to:', uri.uri);
-            Alert.alert('Success', `File saved: ${uri.uri}`);
-          } catch (error) {
-            console.error('Error saving file:', error);
-            Alert.alert('Error', 'Failed to save file');
-          }
-        } else {
-          console.warn('Invalid download finished event data');
-        }
-      },
-    );
-
-    return () => {
-      onChangeSubscription.remove();
-      onDownloadFinishedSubscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    handleQueryPeers();
-    const interval = connectedPeers < 100 ? 1000 : 5000;
-    const schedule = setInterval(handleQueryPeers, interval);
-    return () => clearInterval(schedule);
-  }, [connectedPeers]);
-
-  const handleQueryPeers = () => {
-    SwarmNodeModule.getConnectedPeers().then((peers: number) => {
-      setConnectedPeers(peers);
-    });
-  };
-
-  const handleDownload = () => {
-    void SwarmNodeModule.download({ hash: swarmHash });
+  const handleDownload = async () => {
+    downloadStarted();
+    await SwarmNodeModule.download({ hash: swarmHash });
+    downloadFinished();
   };
 
   return (
@@ -113,7 +58,7 @@ export default function TabTwoScreen() {
           <TextInput
             style={styles.input}
             value={swarmHash}
-            onChangeText={setSwarmHash}
+            onChangeText={updateHash}
             placeholder="Swarm Hash"
             placeholderTextColor="#999"
             autoCapitalize="none"
